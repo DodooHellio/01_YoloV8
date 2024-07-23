@@ -1,10 +1,28 @@
 import cv2
-import cvzone
 from ultralytics import YOLO
-import time
-from IPython.display import Video
 from screeninfo import get_monitors
 import os
+
+
+def clip_generator(img, track_id=0,x=0,y=0,frame_number=0):
+
+    #img = cv2.circle(img, (x,y), radius=0, color=(0, 0, 255))
+    cv2.imwrite(track_id, img)
+
+
+def mkdir_clips(clip_path):
+
+    clip_path = os.path.join((os.path.dirname(__file__)), "Clips")
+    print(clip_path)
+    if not os.path.exists(clip_path):
+        os.makedirs(clip_path)
+
+
+
+
+
+
+
 
 ########## MONITOR INFO ##########
 # Get a list of connected monitors
@@ -19,7 +37,7 @@ monitor_height = monitor.height
 ########## PARAMS ##########
 video_name = "P1077418_Balcon_4K25FPS.MP4"
 mask_name = "P1077418_Balcon_4K25FPS_MASK.jpg"
-apply_mask = False
+apply_mask = True
 display_mask = True
 frame_by_frame = True
 
@@ -58,92 +76,97 @@ video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 ########## OPEN MASK ##########
 if apply_mask :
-
     mask_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Videos", mask_name )
-
     if os.path.exists(mask_path):
         mask = cv2.imread(mask_path)
-
         mask_gray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
         _, mask_binary = cv2.threshold(mask_gray, 128, 255, cv2.THRESH_BINARY)
-
     else:
         raise FileExistsError
 
 
 
 ########## MAIN ##########
-# Create a window with the size of the video at the calculated position
-cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
-cv2.moveWindow("Image", (video_width - monitor_width) // 2, (video_height - monitor_height) // 2)
-cv2.resizeWindow("Image", monitor_width, monitor_height)
-
-print("debut")
-frame_number = 0
-timeline = []
-while cap.isOpened():
+if __name__ == '__main__':
 
 
+    # Create a sswindow with the size of the video at the calculated position
+    cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
+    cv2.moveWindow("Image", (video_width - monitor_width) // 2, (video_height - monitor_height) // 2)
+    cv2.resizeWindow("Image", monitor_width, monitor_height)
 
-    success, img = cap.read()
-    if success:
-        frame_number += 1
+    print("debut")
+    frame_number = 0
+    timeline = []
+    while cap.isOpened():
 
-        if apply_mask:
-            img_pretrack = cv2.bitwise_and(img, img, mask=mask_binary)
-            if display_mask:
-                img = img_pretrack
+
+
+        success, img = cap.read()
+        if success:
+            frame_number += 1
+
+            # Apply mask on img to track
+            if apply_mask:
+                img_pretrack = cv2.bitwise_and(img, img, mask=mask_binary)
+                if display_mask:
+                    img = img_pretrack
+                else :
+                    pass
             else :
+                img_pretrack= img
+
+
+
+            # Run YOLOv8 tracking on the frame, persisting tracks between frames
+            results = facemodel.track(img_pretrack, persist=True)
+
+
+
+            # Get the boxes and track IDs
+            try:
+                boxes = results[0].boxes.xywh
+                track_ids = results[0].boxes.id.int().tolist()
+
+
+                for box, track_id in zip(boxes, track_ids):
+                    x, y, w, h = box
+                    print(track_id,x,y)
+                    clip_generator(img,track_id,x,y,frame_number)
+
+
+
+            # Pass if no box or no id detected
+            except AttributeError:
+                print(f'frame number {frame_number} : no box or no id detected')
                 pass
 
-        else :
-            img_pretrack= img
+            # Plot results of tracking
+            img = results[0].plot()
 
 
 
-        # Run YOLOv8 tracking on the frame, persisting tracks between frames
-        results = facemodel.track(img_pretrack, persist=True)
+            #display FPS and frame number
+            cv2.putText(img, f'FPS: {int(fps)}', (10  , video_height - 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
+            cv2.putText(img, f'Frame : {int(frame_number)}', (10  , video_height - 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
+
+            cv2.imshow("Image", img)
 
 
 
-        # Get the boxes and track IDs
-        try:
-            boxes = results[0].boxes.xywh
-            track_ids = results[0].boxes.id.int().tolist()
-
-
-
-        except AttributeError:
-            print(f'frame number {frame_number} : no box or no id detected')
-            pass
-
-
-        img = results[0].plot()
-        print(f' result : {results[0]}')
-        print(f' probs ######### : {results[0].probs}')
-
-
-
-        #display FPS
-        cv2.putText(img, f'FPS: {int(fps)}', (10  , video_height - 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
-        cv2.putText(img, f'Frame : {int(frame_number)}', (10  , video_height - 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
-
-        cv2.imshow("Image", img)
-
-
-        if frame_by_frame:
-            key = cv2.waitKey(0) & 0xFF
-            # if the 'q' key is pressed, exit from loop
-            if key == ord("q"):
-                cv2.destroyAllWindows()
-                cap.release()
-                break
-            #if the 'n' key is pressed, go to next frame
-            if key == ord("n"):
-                continue
-        else :
-            #continue loop
-            if cv2.waitKey(delay) == ord('q'):
-                cv2.destroyAllWindows()
-                cap.release()
-                break
+            if frame_by_frame:
+                key = cv2.waitKey(0) & 0xFF
+                # if the 'q' key is pressed, exit from loop
+                if key == ord("q"):
+                    cv2.destroyAllWindows()
+                    cap.release()
+                    break
+                #if the 'n' key is pressed, go to next frame
+                if key == ord("n"):
+                    continue
+            else :
+                #continue loop
+                if cv2.waitKey(delay) == ord('q'):
+                    cv2.destroyAllWindows()
+                    cap.release()
+                    break
