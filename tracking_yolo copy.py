@@ -13,35 +13,63 @@ video_name = "P1077418_Balcon_4K25FPS.MP4"
 video_path = os.path.join(os. getcwd(), "Videos", video_name )
 cap = cv2.VideoCapture(video_path)
 
+
+frame_number = 0
 # Store the track history
 track_history = defaultdict(lambda: [])
-frame_number = 0
 # Loop through the video frames
 while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
-    frame_number += 1
 
     if success:
+
+        frame_number += 1
+        print("#"*10)
+        print(f"frame number {frame_number}")
+
+
+
         # Run YOLOv8 tracking on the frame, persisting tracks between frames
         results = model.track(frame, persist=True)
-
+        print(f'results : {results}')
         # Get the boxes and track IDs
+
         boxes = results[0].boxes.xywh.cpu()
+        print(f' boxes = {boxes}')
+
 
 
         try :
-            track_ids = results[0].boxes.id.int().cpu().tolist()
+            #track_ids = results[0].boxes.id.int().cpu().tolist()
+            track_ids = results[0].boxes.id.int().tolist()
+
+
+            print(f' track_id  = {track_ids}')
+
         except AttributeError:
             track_ids = results[0].boxes.xywh
+            print(f' track_id error raise  = {track_ids}')
+
+
 
         # Visualize the results on the frame
         annotated_frame = results[0].plot()
 
         # Plot the tracks
         for box, track_id in zip(boxes, track_ids):
+            print(f'box = {box}')
+
+
+
             x, y, w, h = box
+            print(f'x : {x}, y : {y}, w:{w}, h:{h} end="\n"')
+
             track = track_history[track_id]
+            print(f'track history = {track_history}')
+            print(f'track_id = {track_id}')
+
+            print(f'track = {track}')
             track.append((float(x), float(y)))  # x, y center point
             if len(track) > 30:  # retain 90 tracks for 90 frames
                 track.pop(0)
@@ -53,9 +81,17 @@ while cap.isOpened():
         # Display the annotated frame
         cv2.imshow("YOLOv8 Tracking", annotated_frame)
 
-        # Break the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        key = cv2.waitKey(0) & 0xFF
+
+        # if the 'q' key is pressed, exit from loop
+        if key == ord("q"):
             break
+
+
+        #if the 'n' key is pressed, go to next frame
+        if key == ord("n"):
+            continue
+
     else:
         # Break the loop if the end of the video is reached
         break
