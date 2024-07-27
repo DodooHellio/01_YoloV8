@@ -2,12 +2,18 @@ import cv2
 from ultralytics import YOLO
 from screeninfo import get_monitors
 import os
+import tensorflow as tf
+import numpy as np
 
 
-def clip_generator(img, track_id=0,x=0,y=0,frame_number=0):
 
-    #img = cv2.circle(img, (x,y), radius=0, color=(0, 0, 255))
-    cv2.imwrite(track_id, img)
+def timeline_generator(timeline, track_id, frame_number,x,y):
+    if track_id not in timeline:
+        timeline[track_id] = []
+    data = (frame_number,int(x.numpy()),int(y.numpy()))
+    timeline[track_id].append(data)
+    return timeline
+
 
 
 def mkdir_clips(clip_path):
@@ -16,9 +22,6 @@ def mkdir_clips(clip_path):
     print(clip_path)
     if not os.path.exists(clip_path):
         os.makedirs(clip_path)
-
-
-
 
 
 
@@ -37,8 +40,8 @@ monitor_height = monitor.height
 ########## PARAMS ##########
 video_name = "P1077418_Balcon_4K25FPS.MP4"
 mask_name = "P1077418_Balcon_4K25FPS_MASK.jpg"
-apply_mask = True
-display_mask = True
+apply_mask = False
+display_mask = False
 frame_by_frame = True
 
 
@@ -95,9 +98,9 @@ if __name__ == '__main__':
     cv2.moveWindow("Image", (video_width - monitor_width) // 2, (video_height - monitor_height) // 2)
     cv2.resizeWindow("Image", monitor_width, monitor_height)
 
-    print("debut")
+    print("start")
     frame_number = 0
-    timeline = []
+    timeline = {}
     while cap.isOpened():
 
 
@@ -112,6 +115,7 @@ if __name__ == '__main__':
                 if display_mask:
                     img = img_pretrack
                 else :
+                    print("here")
                     pass
             else :
                 img_pretrack= img
@@ -131,8 +135,11 @@ if __name__ == '__main__':
 
                 for box, track_id in zip(boxes, track_ids):
                     x, y, w, h = box
-                    print(track_id,x,y)
-                    clip_generator(img,track_id,x,y,frame_number)
+                    print(f'{x},{y} end="\n"')
+
+                    timeline = timeline_generator(timeline,track_id, frame_number,x,y)
+                    print(f'{timeline} end="\n"')
+
 
 
 
