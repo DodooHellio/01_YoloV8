@@ -10,7 +10,7 @@ import numpy as np
 def timeline_generator(timeline, track_id, frame_number,x,y):
     if track_id not in timeline:
         timeline[track_id] = []
-    data = (frame_number,int(x.numpy()),int(y.numpy()))
+    data = (frame_number,int(x),int(y))
     timeline[track_id].append(data)
     return timeline
 
@@ -91,6 +91,8 @@ if apply_mask :
 
 ########## MAIN ##########
 if __name__ == '__main__':
+    print("Programme Start :) ")
+
 
 
     # Create a sswindow with the size of the video at the calculated position
@@ -98,12 +100,9 @@ if __name__ == '__main__':
     cv2.moveWindow("Image", (video_width - monitor_width) // 2, (video_height - monitor_height) // 2)
     cv2.resizeWindow("Image", monitor_width, monitor_height)
 
-    print("start")
     frame_number = 0
     timeline = {}
     while cap.isOpened():
-
-
 
         success, img = cap.read()
         if success:
@@ -115,7 +114,7 @@ if __name__ == '__main__':
                 if display_mask:
                     img = img_pretrack
                 else :
-                    print("here")
+                    print("no mask applied")
                     pass
             else :
                 img_pretrack= img
@@ -125,32 +124,38 @@ if __name__ == '__main__':
             # Run YOLOv8 tracking on the frame, persisting tracks between frames
             results = facemodel.track(img_pretrack, persist=True)
 
-
+            print(f'{results[0].boxes.conf = }')
+            print(f'{results[0].boxes.id = }')
 
             # Get the boxes and track IDs
+            #tolist() used to convert convert to list
             try:
-                boxes = results[0].boxes.xywh
+                boxes = results[0].boxes.xyxy.tolist()
                 track_ids = results[0].boxes.id.int().tolist()
+                conf_scores = results[0].boxes.conf.tolist()
 
-
-                for box, track_id in zip(boxes, track_ids):
-                    x, y, w, h = box
-                    print(f'{x},{y} end="\n"')
-
+                for box, track_id, score in zip(boxes, track_ids, conf_scores):
+                    x, y, x2, y2 = box
+                    print(f'{track_id = } : ({x = }, {y = })  ({x2 = }, {y2 = }) and {score =} ')
+                    #timeline file generator
                     timeline = timeline_generator(timeline,track_id, frame_number,x,y)
-                    print(f'{timeline} end="\n"')
-
-
-
-
             # Pass if no box or no id detected
             except AttributeError:
                 print(f'frame number {frame_number} : no box or no id detected')
                 pass
 
-            # Plot results of tracking
+
+            # Plot rsesults of tracking
             img = results[0].plot()
 
+
+            # Plot ID
+            for id in timeline:
+                print(f'{timeline = }')
+                x = timeline[id][-1][1]
+                y = timeline[id][-1][2]
+                print(timeline[id])
+                img = cv2.circle(img, (x, y), radius=100, color=(0, 0, 255), thickness=-1)
 
 
             #display FPS and frame number
