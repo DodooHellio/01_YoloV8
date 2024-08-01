@@ -7,6 +7,14 @@ import numpy as np
 
 
 
+def df_timeline_generator(df_timeline, frame_number, track_id,x,y,conf_scores):
+    if frame_number not in df_timeline:
+        df_timeline[frame_number] = []
+    data = {"track_id": track_id , "x" : int(x), "y" : int(y)}
+    df_timeline[frame_number].append(data)
+    return df_timeline
+
+
 def timeline_generator(timeline, track_id, frame_number,x,y):
     if track_id not in timeline:
         timeline[track_id] = []
@@ -102,6 +110,7 @@ if __name__ == '__main__':
 
     frame_number = 0
     timeline = {}
+    df_timeline = {}
     while cap.isOpened():
 
         success, img = cap.read()
@@ -136,26 +145,28 @@ if __name__ == '__main__':
 
                 for box, track_id, score in zip(boxes, track_ids, conf_scores):
                     x, y, x2, y2 = box
-                    print(f'{track_id = } : ({x = }, {y = })  ({x2 = }, {y2 = }) and {score =} ')
+                    #print(f'{track_id = } : ({x = }, {y = })  ({x2 = }, {y2 = }) and {score =} ')
                     #timeline file generator
-                    timeline = timeline_generator(timeline,track_id, frame_number,x,y)
+                    #timeline = timeline_generator(timeline,track_id, frame_number,x,y)
+                    df_timeline = df_timeline_generator(df_timeline, frame_number, track_id,x,y,conf_scores)
             # Pass if no box or no id detected
             except AttributeError:
                 print(f'frame number {frame_number} : no box or no id detected')
                 pass
 
-
+            print(df_timeline)
             # Plot rsesults of tracking
             img = results[0].plot()
 
 
-            # Plot ID
+
+            """ # Plot ID
             for id in timeline:
                 print(f'{timeline = }')
                 x = timeline[id][-1][1]
                 y = timeline[id][-1][2]
                 print(timeline[id])
-                img = cv2.circle(img, (x, y), radius=100, color=(0, 0, 255), thickness=-1)
+                img = cv2.circle(img, (x, y), radius=100, color=(0, 0, 255), thickness=-1) """
 
 
             #display FPS and frame number

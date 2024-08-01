@@ -3,6 +3,7 @@ import os
 import cv2
 import numpy as np
 
+
 from ultralytics import YOLO
 
 # Load the YOLOv8 model
