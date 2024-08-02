@@ -1,36 +1,19 @@
-import cv2
-from ultralytics import YOLO
-from screeninfo import get_monitors
+import cv2 # type: ignore
+from ultralytics import YOLO # type: ignore
+from screeninfo import get_monitors # type: ignore
+
 import os
 import tensorflow as tf
 import numpy as np
 
 
 
-def df_timeline_generator(df_timeline, frame_number, track_id,x,y,conf_scores):
-    if frame_number not in df_timeline:
-        df_timeline[frame_number] = []
+def timeline_generator(timeline, frame_number, track_id,x,y,conf_scores):
+    if frame_number not in timeline:
+        timeline[frame_number] = []
     data = {"track_id": track_id , "x" : int(x), "y" : int(y)}
-    df_timeline[frame_number].append(data)
-    return df_timeline
-
-
-def timeline_generator(timeline, track_id, frame_number,x,y):
-    if track_id not in timeline:
-        timeline[track_id] = []
-    data = (frame_number,int(x),int(y))
-    timeline[track_id].append(data)
+    timeline[frame_number].append(data)
     return timeline
-
-
-
-def mkdir_clips(clip_path):
-
-    clip_path = os.path.join((os.path.dirname(__file__)), "Clips")
-    print(clip_path)
-    if not os.path.exists(clip_path):
-        os.makedirs(clip_path)
-
 
 
 
@@ -47,9 +30,9 @@ monitor_height = monitor.height
 
 ########## PARAMS ##########
 video_name = "P1077418_Balcon_4K25FPS.MP4"
-mask_name = "P1077418_Balcon_4K25FPS_MASK.jpg"
-apply_mask = False
-display_mask = False
+mask_name = "P1077418_Balcon_4K25FPS_MASK_2.jpg"
+apply_mask = True
+display_mask = True
 frame_by_frame = True
 
 
@@ -110,7 +93,6 @@ if __name__ == '__main__':
 
     frame_number = 0
     timeline = {}
-    df_timeline = {}
     while cap.isOpened():
 
         success, img = cap.read()
@@ -145,28 +127,17 @@ if __name__ == '__main__':
 
                 for box, track_id, score in zip(boxes, track_ids, conf_scores):
                     x, y, x2, y2 = box
-                    #print(f'{track_id = } : ({x = }, {y = })  ({x2 = }, {y2 = }) and {score =} ')
-                    #timeline file generator
-                    #timeline = timeline_generator(timeline,track_id, frame_number,x,y)
-                    df_timeline = df_timeline_generator(df_timeline, frame_number, track_id,x,y,conf_scores)
+
+                    print(f"{track_id = }, {frame_number = },( {x = }, {y = } ) ( {x2 = }, {y2 = })")
+                    timeline = timeline_generator(timeline, frame_number, track_id,x,y,conf_scores)
             # Pass if no box or no id detected
             except AttributeError:
-                print(f'frame number {frame_number} : no box or no id detected')
+                print(f'{frame_number = } : No Id detected')
                 pass
 
-            print(df_timeline)
             # Plot rsesults of tracking
             img = results[0].plot()
 
-
-
-            """ # Plot ID
-            for id in timeline:
-                print(f'{timeline = }')
-                x = timeline[id][-1][1]
-                y = timeline[id][-1][2]
-                print(timeline[id])
-                img = cv2.circle(img, (x, y), radius=100, color=(0, 0, 255), thickness=-1) """
 
 
             #display FPS and frame number

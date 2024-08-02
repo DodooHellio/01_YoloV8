@@ -1,11 +1,9 @@
-import cv2
-from ultralytics import YOLO
-from screeninfo import get_monitors
+import cv2 # type: ignore
+from ultralytics import YOLO # type: ignore
 import os
 import numpy as np
 from tqdm import tqdm
 import json
-
 
 
 
@@ -17,28 +15,12 @@ def df_timeline_generator(df_timeline, frame_number, track_id,x,y,conf_scores):
     return df_timeline
 
 
-def timeline_generator(timeline, track_id, frame_number,x,y):
-    if track_id not in timeline:
-        timeline[track_id] = []
-    data = (frame_number,int(x),int(y))
-    timeline[track_id].append(data)
-    return timeline
-
-
-
-def mkdir_clips(clip_path):
-
-    clip_path = os.path.join((os.path.dirname(__file__)), "Clips")
-    print(clip_path)
-    if not os.path.exists(clip_path):
-        os.makedirs(clip_path)
-
 
 
 ########## PARAMS ##########
 video_name = "P1077418_Balcon_4K25FPS.MP4"
-mask_name = "P1077418_Balcon_4K25FPS_MASK.jpg"
-apply_mask = False
+mask_name = "P1077418_Balcon_4K25FPS_MASK_2.jpg"
+apply_mask = True
 
 
 ########## MODEL ##########
